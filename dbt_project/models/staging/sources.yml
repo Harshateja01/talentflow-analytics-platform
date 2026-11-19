@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: talentflow_raw
+    schema: talentflow_raw
+    description: "Raw ingested recruiting, workforce, and survey datasets."
+    tables:
+      - name: candidates
+        description: "Candidate contact details, experience, and creation timestamp."
+      - name: applications
+        description: "Job applications linking candidates to departments and recruiting sources."
+      - name: interviews
+        description: "Candidate interview rounds, feedback ratings, and scores."
+      - name: offers
+        description: "Job offers extended, compensation packages, and status."
+      - name: employees
+        description: "Active and historical workforce records, job levels, and performance."
+      - name: engagement_surveys
+        description: "Periodic employee engagement and workplace satisfaction survey results."
+      - name: departments
+        description: "Enterprise business departments, cost centers, and department leaders."
+      - name: recruiting_sources
+        description: "Recruitment acquisition channels, sources, and posting costs."

@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: int_candidate_application_history
+    description: "Enriched candidate metrics including application frequency, multi-department submissions, and hire outcomes."
+    columns:
+      - name: candidate_id
+        tests:
+          - unique
+          - not_null
+
+  - name: int_recruiting_funnel
+    description: "Application-level funnel progression tracking conversion stages, milestone dates, and duration between stages."
+    columns:
+      - name: application_id
+        tests:
+          - unique
+          - not_null
+
+  - name: int_employee_lifecycle
+    description: "Complete employee journey connecting original recruitment source to workforce tenure, performance, and survey engagement."
+    columns:
+      - name: employee_id
+        tests:
+          - unique
+          - not_null
+
+  - name: int_employee_retention
+    description: "Cohort retention analysis aggregating hire cohorts by department, channel, and job level."

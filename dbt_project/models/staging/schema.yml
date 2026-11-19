@@ -1,0 +1,139 @@
+version: 2
+
+models:
+  - name: stg_candidates
+    description: "Cleaned and deduplicated candidate directory."
+    columns:
+      - name: candidate_id
+        description: "Primary key for candidates."
+        tests:
+          - unique
+          - not_null
+      - name: email
+        description: "Standardized candidate contact email."
+        tests:
+          - not_null
+
+  - name: stg_applications
+    description: "Cleaned applications with standardized department mappings and stages."
+    columns:
+      - name: application_id
+        description: "Primary key for applications."
+        tests:
+          - unique
+          - not_null
+      - name: candidate_id
+        description: "Foreign key reference to candidate."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_candidates')
+              field: candidate_id
+      - name: department_id
+        description: "Standardized department identifier."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_departments')
+              field: department_id
+      - name: candidate_stage
+        description: "Current progression stage in recruiting funnel."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Applied', 'Screen', 'Technical Interview', 'Manager & Onsite', 'Offer', 'Hired']
+
+  - name: stg_interviews
+    description: "Standardized interview evaluations, rounds, and candidate feedback scores."
+    columns:
+      - name: interview_id
+        description: "Primary key for interview records."
+        tests:
+          - unique
+          - not_null
+      - name: application_id
+        description: "Foreign key linking interview to application."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_applications')
+              field: application_id
+      - name: interview_result
+        description: "Outcome result of the interview round."
+        tests:
+          - accepted_values:
+              values: ['Pass', 'Fail']
+
+  - name: stg_offers
+    description: "Standardized offer packages, acceptance statuses, and compensation."
+    columns:
+      - name: offer_id
+        description: "Primary key for offer records."
+        tests:
+          - unique
+          - not_null
+      - name: application_id
+        description: "Foreign key linking offer to application."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_applications')
+              field: application_id
+      - name: offer_status
+        description: "Current disposition of job offer."
+        tests:
+          - accepted_values:
+              values: ['Accepted', 'Declined', 'Pending', 'Rescinded']
+
+  - name: stg_employees
+    description: "Cleaned workforce headcount, tenure, and employment status."
+    columns:
+      - name: employee_id
+        description: "Primary key for employees."
+        tests:
+          - unique
+          - not_null
+      - name: candidate_id
+        description: "Foreign key referencing candidate."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_candidates')
+              field: candidate_id
+      - name: employment_status
+        description: "Workforce lifecycle status."
+        tests:
+          - accepted_values:
+              values: ['Active', 'Terminated', 'Resigned', 'On Leave']
+
+  - name: stg_engagement_surveys
+    description: "Employee engagement and sentiment survey feedback."
+    columns:
+      - name: survey_id
+        description: "Primary key for survey submissions."
+        tests:
+          - unique
+          - not_null
+      - name: employee_id
+        description: "Foreign key to employee."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_employees')
+              field: employee_id
+
+  - name: stg_departments
+    description: "Corporate department dimension."
+    columns:
+      - name: department_id
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_recruiting_sources
+    description: "Recruitment acquisition channels and cost attribution."
+    columns:
+      - name: source_id
+        tests:
+          - unique
+          - not_null

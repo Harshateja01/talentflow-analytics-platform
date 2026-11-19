@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: dim_department
+    description: "Department dimension table containing headcount, historic hires, attrition rates, and engagement scores."
+    columns:
+      - name: department_id
+        tests:
+          - unique
+          - not_null
+      - name: department_name
+        tests:
+          - not_null
+
+  - name: dim_recruiting_source
+    description: "Recruiting source dimension table evaluating channel efficiency, hiring volume, cost, and churn."
+    columns:
+      - name: source_id
+        tests:
+          - unique
+          - not_null
+      - name: source_name
+        tests:
+          - not_null
+
+  - name: fct_recruiting_pipeline
+    description: "Core recruiting fact table at application grain tracking candidate lifecycle stages, conversion flags, and milestone durations."
+    columns:
+      - name: application_id
+        tests:
+          - unique
+          - not_null
+      - name: candidate_id
+        tests:
+          - not_null
+      - name: department_id
+        tests:
+          - not_null
+
+  - name: fct_employee_lifecycle
+    description: "Workforce fact table containing employee tenure, performance ratings, compensation, and engagement feedback."
+    columns:
+      - name: employee_id
+        tests:
+          - unique
+          - not_null
+      - name: candidate_id
+        tests:
+          - not_null
+      - name: department_id
+        tests:
+          - not_null
+
+  - name: fct_employee_attrition
+    description: "Employee attrition fact table capturing departure segments, exit tenure, and turnover drivers."
+    columns:
+      - name: employee_id
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_candidate_experience
+    description: "Interview experience feedback ratings and duration analytics."
+    columns:
+      - name: interview_id
+        tests:
+          - unique
+          - not_null
+
+  - name: mart_recruiting_kpis
+    description: "Aggregated monthly recruiting and funnel KPI metrics."
+
+  - name: mart_workforce_kpis
+    description: "Aggregated monthly workforce headcount, new hires, and attrition trends."
