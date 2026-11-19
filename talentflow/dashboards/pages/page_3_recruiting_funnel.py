@@ -1,5 +1,6 @@
-"""Page 2: Recruiting Funnel Analytics."""
+"""Module 3: Recruiting Funnel Intelligence."""
 
+from typing import Dict, Any, Optional
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
@@ -7,19 +8,25 @@ import pandas as pd
 
 from talentflow.analytics.queries import AnalyticsQueries
 from talentflow.analytics.kpis import KPIService
-from talentflow.dashboards.components import create_plotly_funnel, render_metric_card, COLORS
+from talentflow.dashboards.components import create_plotly_funnel, render_metric_card, render_active_filter_bar, COLORS
 
-def render():
-    st.markdown('<span class="badge-header">Recruiting Operations & Pipeline Health</span>', unsafe_allow_html=True)
-    st.title("Recruiting Funnel & Conversion Analytics")
-    st.markdown("Detailed breakdown of candidate progression, conversion hurdles, stage latencies, and drop-off bottlenecks.")
+def render(filters: Optional[Dict[str, Any]] = None):
+    filters = filters or {}
+    depts = filters.get("departments")
+    sources = filters.get("sources")
+
+    st.markdown('<span class="badge-header">Recruiting Operations & Pipeline Velocity</span>', unsafe_allow_html=True)
+    st.title("Recruiting Funnel Intelligence")
+    st.markdown("Full-funnel stage progression tracking, conversion drop-off points, stage transition cycle times, and bottleneck diagnostics.")
+
+    render_active_filter_bar(filters)
 
     queries = AnalyticsQueries()
-    funnel_summary_df = queries.get_recruiting_funnel_summary()
-    stage_duration_df = queries.get_stage_duration_breakdown()
+    funnel_summary_df = queries.get_recruiting_funnel_summary(departments=depts, sources=sources)
+    stage_duration_df = queries.get_stage_duration_breakdown(departments=depts, sources=sources)
 
-    if funnel_summary_df.empty:
-        st.warning("No funnel records available. Please run the data pipeline.")
+    if funnel_summary_df.empty or funnel_summary_df.iloc[0].get("applied", 0) == 0:
+        st.warning("No recruiting funnel records available for the current filter scope.")
         return
 
     funnel_steps = KPIService.calculate_funnel_dropoff(funnel_summary_df)
@@ -35,30 +42,29 @@ def render():
     with c4:
         render_metric_card("Offer to Hire", f"{funnel_steps[5]['stage_conversion_pct']}%", f"{funnel_steps[5]['candidates']:,} signed hires")
 
-    # Main Funnel Diagram + Bottleneck Callout
+    # Main Funnel Diagram + Bottleneck Diagnostic
     col_chart, col_callout = st.columns([7, 5])
     with col_chart:
-        st.subheader("Candidate Progression Funnel")
+        st.subheader("End-to-End Candidate Progression")
         fig_funnel = create_plotly_funnel(funnel_steps)
         st.plotly_chart(fig_funnel, use_container_width=True)
 
     with col_callout:
-        st.subheader("Identified Funnel Bottlenecks")
-        # Identify greatest dropoff stage
+        st.subheader("Automated Bottleneck Detection")
         dropoffs = [s for s in funnel_steps if s["stage"] != "Applied"]
         worst_stage = max(dropoffs, key=lambda x: x["stage_dropoff_pct"])
         
         st.error(f"""
-        **Highest Drop-off Stage: {worst_stage['stage']}**  
-        - **Drop-off Rate:** **{worst_stage['stage_dropoff_pct']}%** of candidates drop out at this transition.
-        - **Remaining Pool:** Only {worst_stage['candidates']:,} candidates successfully passed.
+        **Primary Funnel Bottleneck: {worst_stage['stage']}**  
+        - **Drop-off Rate:** **{worst_stage['stage_dropoff_pct']}%** of candidates do not advance through this hurdle.
+        - **Passed Pool:** {worst_stage['candidates']:,} candidates successfully cleared this phase.
         """)
         
         st.info("""
-        **Operational Diagnostic Checklist:**
-        1. **Screen Calibration:** Validate that initial resume screen filters are not discarding high-potential candidates prematurely.
-        2. **Technical Exercise Friction:** Monitor whether take-home exercises or live coding evaluations show unreasonable abandonment.
-        3. **Onsite Scheduling Delay:** Eliminate delays between rounds to capture top candidates before competing offers arrive.
+        **Data-Driven Operational Diagnostics:**
+        1. **Assessment Alignment**: Audit whether screening or technical rubrics reject qualified candidates due to overly restrictive criteria.
+        2. **Scheduling Latency**: Review calendar gaps between interview stages; prolonged delays directly correlate with increased candidate drop-out.
+        3. **Offer Parity**: Compare declining offers with competing market benchmarks.
         """)
 
     st.markdown("---")
@@ -70,12 +76,12 @@ def render():
             stage_duration_df,
             x="department_name",
             y=["avg_app_to_screen_days", "avg_screen_to_tech_days", "avg_tech_to_onsite_days", "avg_onsite_to_offer_days"],
-            title="Recruitment Stage Duration Breakdown (Days)",
+            title="Recruitment Stage Latency Breakdown (Days)",
             labels={"value": "Days Spent in Stage", "variable": "Hiring Stage"},
             barmode="stack",
             color_discrete_sequence=[COLORS["primary"], COLORS["secondary"], COLORS["warning"], COLORS["success"]],
         )
-        fig_duration.update_layout(xaxis_title="", height=360)
+        fig_duration.update_layout(xaxis_title="", height=350)
         st.plotly_chart(fig_duration, use_container_width=True)
 
         st.dataframe(stage_duration_df, use_container_width=True, hide_index=True)

@@ -1,23 +1,30 @@
-"""Page 1: Executive Overview Dashboard."""
+"""Module 1: Executive Overview Dashboard."""
 
+from typing import Dict, Any, Optional
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
 from talentflow.analytics.queries import AnalyticsQueries
-from talentflow.dashboards.components import render_metric_card, COLORS
+from talentflow.dashboards.components import render_metric_card, render_active_filter_bar, COLORS
 
-def render():
-    st.markdown('<span class="badge-header">Executive Leadership & Strategic Talent</span>', unsafe_allow_html=True)
-    st.title("TalentFlow Executive Overview")
-    st.markdown("High-level strategic scorecard connecting talent acquisition velocity with workforce retention.")
+def render(filters: Optional[Dict[str, Any]] = None):
+    filters = filters or {}
+    depts = filters.get("departments")
+    sources = filters.get("sources")
+
+    st.markdown('<span class="badge-header">Executive Leadership & Strategy</span>', unsafe_allow_html=True)
+    st.title("Executive Overview")
+    st.markdown("High-level executive scorecard connecting recruitment velocity with workforce composition and organizational stability.")
+
+    render_active_filter_bar(filters)
 
     queries = AnalyticsQueries()
-    kpis = queries.get_executive_kpis()
+    kpis = queries.get_executive_kpis(departments=depts, sources=sources)
 
     if not kpis:
-        st.warning("No warehouse data found. Please run the data pipeline first.")
+        st.warning("No warehouse data found matching the selected criteria. Adjust your filters or run the data pipeline.")
         return
 
     # Top KPI Metrics Row
@@ -33,30 +40,30 @@ def render():
     with c5:
         render_metric_card("Active Headcount", f"{int(kpis.get('active_headcount', 0)):,}", "Current workforce")
     with c6:
-        render_metric_card("Attrition Rate", f"{kpis.get('attrition_rate_pct', 0)}%", f"{int(kpis.get('total_attrition', 0)):,} exits")
+        render_metric_card("Attrition Rate", f"{kpis.get('attrition_rate_pct', 0)}%", f"{int(kpis.get('total_attrition', 0)):,} total exits")
 
     st.markdown("---")
 
     # Trend Visualizations
     col_left, col_right = st.columns([7, 5])
-    monthly_df = queries.get_monthly_hiring_trends()
+    monthly_df = queries.get_monthly_hiring_trends(departments=depts, sources=sources)
 
     with col_left:
-        st.subheader("Monthly Hiring & Inflow Trajectory")
+        st.subheader("Monthly Application & Hiring Velocity")
         if not monthly_df.empty:
             fig_trends = go.Figure()
             fig_trends.add_trace(go.Bar(
                 x=monthly_df["application_month"],
                 y=monthly_df["applications"],
                 name="Applications Inflow",
-                marker_color="#D1E9F6",
+                marker_color="#CBD5E1",
                 yaxis="y",
             ))
             fig_trends.add_trace(go.Scatter(
                 x=monthly_df["application_month"],
                 y=monthly_df["hires"],
                 name="Completed Hires",
-                line=dict(color=COLORS["primary"], width=3),
+                line=dict(color=COLORS["secondary"], width=3),
                 mode="lines+markers",
                 yaxis="y2",
             ))
@@ -65,14 +72,14 @@ def render():
                 yaxis2=dict(title="Hires", overlaying="y", side="right", showgrid=False),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                 margin=dict(l=20, r=20, t=30, b=20),
-                height=380,
+                height=360,
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
             )
             st.plotly_chart(fig_trends, use_container_width=True)
 
     with col_right:
-        st.subheader("Time to Hire Velocity (Days)")
+        st.subheader("Hiring Cycle Latency Trend (Days)")
         if not monthly_df.empty:
             fig_cycle = px.line(
                 monthly_df,
@@ -80,21 +87,21 @@ def render():
                 y="avg_time_to_hire_days",
                 markers=True,
                 line_shape="spline",
-                color_discrete_sequence=[COLORS["secondary"]],
+                color_discrete_sequence=[COLORS["accent"]],
             )
             fig_cycle.update_layout(
                 yaxis_title="Average Days",
                 xaxis_title="",
                 margin=dict(l=20, r=20, t=30, b=20),
-                height=380,
+                height=360,
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
             )
             st.plotly_chart(fig_cycle, use_container_width=True)
 
     # Department Scorecard
-    st.subheader("Workforce & Hiring Distribution by Department")
-    dept_df = queries.get_department_metrics()
+    st.subheader("Department Workforce Health Scorecard")
+    dept_df = queries.get_department_metrics(departments=depts)
     if not dept_df.empty:
         c_chart1, c_chart2 = st.columns(2)
         with c_chart1:
@@ -105,8 +112,9 @@ def render():
                 title="Active Headcount by Department",
                 color="department_name",
                 text_auto=True,
+                color_discrete_sequence=px.colors.qualitative.Safe,
             )
-            fig_headcount.update_layout(showlegend=False, xaxis_title="", height=320)
+            fig_headcount.update_layout(showlegend=False, xaxis_title="", height=300)
             st.plotly_chart(fig_headcount, use_container_width=True)
 
         with c_chart2:
@@ -114,12 +122,12 @@ def render():
                 dept_df,
                 x="department_name",
                 y="historic_attrition_rate_pct",
-                title="Historic Attrition Rate (%) by Department",
+                title="Annualized Attrition Rate (%) by Department",
                 color="historic_attrition_rate_pct",
                 color_continuous_scale="Reds",
                 text_auto=True,
             )
-            fig_attr.update_layout(showlegend=False, xaxis_title="", height=320)
+            fig_attr.update_layout(showlegend=False, xaxis_title="", height=300)
             st.plotly_chart(fig_attr, use_container_width=True)
 
         st.dataframe(
@@ -129,7 +137,7 @@ def render():
                 "avg_tenure_months", "avg_department_engagement"
             ]].rename(columns={
                 "department_name": "Department",
-                "department_lead": "Lead",
+                "department_lead": "Executive Lead",
                 "cost_center": "Cost Center",
                 "active_headcount": "Active Headcount",
                 "total_historic_hires": "Total Hires",

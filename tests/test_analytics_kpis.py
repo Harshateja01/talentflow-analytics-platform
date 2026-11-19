@@ -1,4 +1,4 @@
-"""Tests for analytics queries and derived KPI calculations."""
+"""Tests for analytics queries, derived KPI calculations, and filtered scopes."""
 
 import pytest
 import pandas as pd
@@ -44,3 +44,22 @@ def test_analytics_queries_execution():
     assert "total_applications" in kpis
     assert "total_hires" in kpis
     assert "active_headcount" in kpis
+
+def test_analytics_queries_with_filters():
+    queries = AnalyticsQueries()
+    filtered_kpis = queries.get_executive_kpis(departments=["Engineering"])
+    assert isinstance(filtered_kpis, dict)
+    assert "total_applications" in filtered_kpis
+    assert filtered_kpis["total_applications"] > 0
+    # Filtered applications should be a subset of total applications
+    all_kpis = queries.get_executive_kpis()
+    assert filtered_kpis["total_applications"] <= all_kpis["total_applications"]
+
+def test_analytics_filter_options():
+    queries = AnalyticsQueries()
+    options = queries.get_filter_options()
+    assert "departments" in options
+    assert "sources" in options
+    assert "job_levels" in options
+    assert len(options["departments"]) > 0
+    assert "Engineering" in options["departments"]

@@ -1,5 +1,6 @@
-"""Page 7: AI-Powered Insights."""
+"""Module 8: AI-Powered Business Insights."""
 
+from typing import Dict, Any, Optional
 import streamlit as st
 import pandas as pd
 
@@ -7,23 +8,23 @@ from talentflow.config import config
 from talentflow.ai_insights.engine import AIInsightsEngine
 from talentflow.ai_insights.prompts import SUPPORTED_QUESTIONS
 
-def render():
+def render(filters: Optional[Dict[str, Any]] = None):
     st.markdown('<span class="badge-header">Executive Assistant & Natural Language Analytics</span>', unsafe_allow_html=True)
-    st.title("AI-Powered Talent Analytics Insights")
-    st.markdown("Ask complex talent acquisition, conversion, and workforce retention questions powered by curated analytical queries and AI summarization.")
+    st.title("AI-Powered Business Insights")
+    st.markdown("Query recruiting, conversion, and workforce trends in natural language, backed by curated analytical models and automated summarization.")
 
     engine = AIInsightsEngine()
 
-    # Engine status banner
+    # Engine status indicator
     if engine.has_gemini:
-        st.success("🤖 **Gemini 2.5 API Connected:** Summaries are synthesized using Google Gemini with approved metrics tables.")
+        st.success("🤖 **Google Gemini 2.5 Flash Connected:** Insights synthesized dynamically using Gemini API grounded in curated warehouse marts.")
     else:
-        st.info("💡 **Deterministic Analytics Engine Active (Safe Fallback):** Predefined rule-based analysis based on verified warehouse tables.")
+        st.info("💡 **Deterministic Analytics Engine Active (Safe Offline Fallback):** Predefined rule-based analytical intelligence grounded in verified warehouse tables. Set `GEMINI_API_KEY` in `.env` to enable dynamic LLM synthesis.")
 
     st.markdown("---")
 
     # Question Selection
-    st.subheader("Select an Analytical Question")
+    st.subheader("Select an Executive Analytical Query")
     question_options = {k: v["label"] for k, v in SUPPORTED_QUESTIONS.items()}
     
     selected_key = st.selectbox(
@@ -40,10 +41,10 @@ def render():
             st.markdown(result["summary"])
             
             st.markdown("---")
-            with st.expander("🔍 View Underlying Curated Data Table", expanded=False):
+            with st.expander("🔍 View Underlying Curated Metric Table", expanded=False):
                 st.dataframe(result["data"], use_container_width=True)
 
-    # Pre-canned Quick Inquiry Buttons
+    # Pre-canned Quick Inquiries
     st.markdown("#### Quick Analytical Inquiries")
     col1, col2, col3 = st.columns(3)
     with col1:

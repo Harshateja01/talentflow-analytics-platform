@@ -1,65 +1,113 @@
-"""Main Streamlit Application for TalentFlow Analytics Platform."""
+"""TalentFlow Analytics - Main Streamlit Application.
+
+Cloud-Native Recruiting & Workforce Intelligence Platform.
+"""
 
 import streamlit as st
 from talentflow.config import config
+from talentflow.analytics.queries import AnalyticsQueries
 from talentflow.dashboards.components import apply_custom_css
 from talentflow.dashboards.pages import (
     page_1_executive_overview,
-    page_2_recruiting_funnel,
-    page_3_recruiting_source,
+    page_2_talent_acquisition,
+    page_3_recruiting_funnel,
     page_4_workforce_analytics,
     page_5_employee_lifecycle,
-    page_6_data_quality,
-    page_7_ai_insights,
+    page_6_retention_attrition,
+    page_7_data_quality,
+    page_8_ai_insights,
+    page_9_data_platform_docs,
 )
 
 # Configure Streamlit page layout
 st.set_page_config(
-    page_title="TalentFlow Analytics Platform",
+    page_title="TalentFlow Analytics | Workforce Intelligence",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Apply corporate enterprise CSS
+# Apply modern SaaS styling
 apply_custom_css()
 
-# Sidebar Navigation and Configuration
-st.sidebar.image("https://raw.githubusercontent.com/feathericons/feather/master/icons/activity.svg", width=42)
-st.sidebar.title("TalentFlow")
-st.sidebar.caption("Recruiting & Employee Lifecycle Platform")
+# Sidebar: Brand & Platform Header
+st.sidebar.image("https://raw.githubusercontent.com/feathericons/feather/master/icons/activity.svg", width=38)
+st.sidebar.title("TalentFlow Analytics")
+st.sidebar.caption("Cloud-Native Recruiting & Workforce Intelligence Platform")
 st.sidebar.markdown("---")
 
 # Execution Mode Indicator
 mode_color = "🟢" if config.mode == "local" else "🔵"
-st.sidebar.markdown(f"**Runtime Environment:**  \n{mode_color} **{config.mode.upper()} MODE** ({'DuckDB Warehouse' if config.mode == 'local' else 'BigQuery + GCS'})")
+warehouse_label = "DuckDB Local Warehouse" if config.mode == "local" else f"Google BigQuery ({config.gcp_project_id})"
+st.sidebar.markdown(f"**Runtime Environment:**  \n{mode_color} **{config.mode.upper()} MODE**  \n_{warehouse_label}_")
 
+# Module Navigation
 pages = {
     "1. Executive Overview": page_1_executive_overview,
-    "2. Recruiting Funnel": page_2_recruiting_funnel,
-    "3. Recruiting Sources": page_3_recruiting_source,
+    "2. Talent Acquisition Analytics": page_2_talent_acquisition,
+    "3. Recruiting Funnel Intelligence": page_3_recruiting_funnel,
     "4. Workforce Analytics": page_4_workforce_analytics,
-    "5. Employee Lifecycle": page_5_employee_lifecycle,
-    "6. Data Quality & Audit": page_6_data_quality,
-    "7. AI-Powered Insights": page_7_ai_insights,
+    "5. Employee Lifecycle Analytics": page_5_employee_lifecycle,
+    "6. Retention & Attrition Intelligence": page_6_retention_attrition,
+    "7. Data Quality & Pipeline Monitoring": page_7_data_quality,
+    "8. AI-Powered Business Insights": page_8_ai_insights,
+    "9. Data Platform & Model Documentation": page_9_data_platform_docs,
 }
 
 selected_page = st.sidebar.radio(
-    "Navigation",
+    "Platform Modules",
     list(pages.keys()),
     index=0,
 )
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### Platform Metadata")
-st.sidebar.text(f"Version: 1.0.0")
-st.sidebar.text(f"Warehouse: {'DuckDB' if config.mode == 'local' else 'BigQuery'}")
-st.sidebar.text(f"Engine: dbt Core 1.12.7")
 
-# Footer in sidebar
+# Interactive Global Filters
+st.sidebar.subheader("🎯 Global Analytical Filters")
+
+# Fetch available filter values from warehouse
+queries = AnalyticsQueries()
+filter_options = queries.get_filter_options()
+
+selected_depts = st.sidebar.multiselect(
+    "Department",
+    options=filter_options["departments"],
+    default=[],
+    help="Filter analytics across specific business departments.",
+)
+
+selected_sources = st.sidebar.multiselect(
+    "Recruiting Source",
+    options=filter_options["sources"],
+    default=[],
+    help="Filter analytics across specific acquisition channels.",
+)
+
+selected_levels = st.sidebar.multiselect(
+    "Job Level",
+    options=filter_options["job_levels"],
+    default=[],
+    help="Filter analytics across career ladder tiers.",
+)
+
+if st.sidebar.button("Reset Filters", use_container_width=True):
+    st.rerun()
+
+filters = {
+    "departments": selected_depts if selected_depts else None,
+    "sources": selected_sources if selected_sources else None,
+    "job_levels": selected_levels if selected_levels else None,
+}
+
+# Platform Metadata & Synthetic Data Notice
 st.sidebar.markdown("---")
-st.sidebar.caption("Portfolio Analytics Engineering Project\nHR Analytics – Elastic Architecture")
+st.sidebar.caption("""
+**Platform Governance:**  
+- **Dataset**: 100% Synthetic & Anonymized  
+- **Transformation**: dbt Core 1.12.7  
+- **Quality Gates**: 59 dbt Tests (100% Pass)
+""")
 
-# Render active page
-page_module = pages[selected_page]
-page_module.render()
+# Render Selected Module
+active_module = pages[selected_page]
+active_module.render(filters=filters)
