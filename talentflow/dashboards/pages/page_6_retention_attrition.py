@@ -6,7 +6,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
-from talentflow.analytics.queries import AnalyticsQueries
+from talentflow.dashboards.cache import (
+    get_shared_analytics_queries,
+    get_cached_department_metrics,
+    get_cached_attrition_analysis,
+)
 from talentflow.dashboards.components import render_metric_card, render_active_filter_bar, COLORS
 
 def render(filters: Optional[Dict[str, Any]] = None):
@@ -28,9 +32,9 @@ def render(filters: Optional[Dict[str, Any]] = None):
     *Example:* While internal referrals correlate with higher 1-year retention, sourcing channel alone does not cause employee longevity; factors such as onboarding quality, team leadership, role expectation alignment, and market compensation contribute significantly to retention.
     """)
 
-    queries = AnalyticsQueries()
-    dept_df = queries.get_department_metrics(departments=depts)
-    attr_df = queries.get_attrition_analysis(departments=depts, sources=sources, job_levels=job_levels)
+    queries = get_shared_analytics_queries()
+    dept_df = get_cached_department_metrics(departments=depts)
+    attr_df = get_cached_attrition_analysis(departments=depts, sources=sources, job_levels=job_levels)
 
     if attr_df.empty:
         st.warning("No attrition records found matching the active filter criteria.")

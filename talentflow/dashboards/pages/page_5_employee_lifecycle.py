@@ -6,7 +6,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
-from talentflow.analytics.queries import AnalyticsQueries
+from talentflow.dashboards.cache import (
+    get_shared_analytics_queries,
+    get_cached_source_performance,
+    get_cached_engagement_by_tenure,
+)
 from talentflow.dashboards.components import render_active_filter_bar, COLORS
 
 def render(filters: Optional[Dict[str, Any]] = None):
@@ -20,9 +24,9 @@ def render(filters: Optional[Dict[str, Any]] = None):
 
     render_active_filter_bar(filters)
 
-    queries = AnalyticsQueries()
-    source_df = queries.get_source_performance(departments=depts, sources=sources)
-    tenure_eng_df = queries.get_engagement_by_tenure(departments=depts)
+    queries = get_shared_analytics_queries()
+    source_df = get_cached_source_performance(departments=depts, sources=sources)
+    tenure_eng_df = get_cached_engagement_by_tenure(departments=depts)
 
     st.markdown("---")
 

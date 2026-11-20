@@ -7,13 +7,15 @@ import pandas as pd
 from talentflow.config import config
 from talentflow.ai_insights.engine import AIInsightsEngine
 from talentflow.ai_insights.prompts import SUPPORTED_QUESTIONS
+from talentflow.dashboards.cache import get_shared_analytics_queries
 
 def render(filters: Optional[Dict[str, Any]] = None):
     st.markdown('<span class="badge-header">Executive Assistant & Natural Language Analytics</span>', unsafe_allow_html=True)
     st.title("AI-Powered Business Insights")
     st.markdown("Query recruiting, conversion, and workforce trends in natural language, backed by curated analytical models and automated summarization.")
 
-    engine = AIInsightsEngine()
+    queries = get_shared_analytics_queries()
+    engine = AIInsightsEngine(queries=queries)
 
     # Engine status indicator
     if engine.has_gemini:

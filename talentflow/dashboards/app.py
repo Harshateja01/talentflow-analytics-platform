@@ -5,7 +5,11 @@ Cloud-Native Recruiting & Workforce Intelligence Platform.
 
 import streamlit as st
 from talentflow.config import config
-from talentflow.analytics.queries import AnalyticsQueries
+from talentflow.dashboards.cache import (
+    get_shared_analytics_queries,
+    get_cached_filter_options,
+    clear_dashboard_cache,
+)
 from talentflow.dashboards.components import apply_custom_css
 from talentflow.dashboards.pages import (
     page_1_executive_overview,
@@ -65,9 +69,9 @@ st.sidebar.markdown("---")
 # Interactive Global Filters
 st.sidebar.subheader("🎯 Global Analytical Filters")
 
-# Fetch available filter values from warehouse
-queries = AnalyticsQueries()
-filter_options = queries.get_filter_options()
+# Fetch available filter values from warehouse (cached)
+queries = get_shared_analytics_queries()
+filter_options = get_cached_filter_options()
 
 selected_depts = st.sidebar.multiselect(
     "Department",
@@ -91,6 +95,7 @@ selected_levels = st.sidebar.multiselect(
 )
 
 if st.sidebar.button("Reset Filters", use_container_width=True):
+    clear_dashboard_cache()
     st.rerun()
 
 filters = {

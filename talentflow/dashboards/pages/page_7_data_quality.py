@@ -9,8 +9,10 @@ import plotly.express as px
 
 from talentflow.config import config
 from talentflow.dashboards.components import render_metric_card
+from talentflow.dashboards.cache import get_shared_analytics_queries
 
 def render(filters: Optional[Dict[str, Any]] = None):
+    queries = get_shared_analytics_queries()
     st.markdown('<span class="badge-header">Data Platform Governance & Observability</span>', unsafe_allow_html=True)
     st.title("Data Quality & Pipeline Monitoring")
     st.markdown("Real-time audit dashboard monitoring schema assertions, controlled anomaly scenarios, referential integrity, and pipeline execution logs.")

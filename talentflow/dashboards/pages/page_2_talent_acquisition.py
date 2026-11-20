@@ -6,7 +6,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
-from talentflow.analytics.queries import AnalyticsQueries
+from talentflow.dashboards.cache import (
+    get_shared_analytics_queries,
+    get_cached_source_performance,
+)
 from talentflow.analytics.kpis import KPIService
 from talentflow.dashboards.components import render_metric_card, render_active_filter_bar, COLORS
 
@@ -21,8 +24,8 @@ def render(filters: Optional[Dict[str, Any]] = None):
 
     render_active_filter_bar(filters)
 
-    queries = AnalyticsQueries()
-    source_df = queries.get_source_performance(departments=depts, sources=sources)
+    queries = get_shared_analytics_queries()
+    source_df = get_cached_source_performance(departments=depts, sources=sources)
 
     if source_df.empty:
         st.warning("No recruiting source data available for the active filters.")

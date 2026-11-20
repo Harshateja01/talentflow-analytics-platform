@@ -6,7 +6,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
-from talentflow.analytics.queries import AnalyticsQueries
+from talentflow.dashboards.cache import (
+    get_shared_analytics_queries,
+    get_cached_executive_kpis,
+    get_cached_monthly_hiring_trends,
+    get_cached_department_metrics,
+)
 from talentflow.dashboards.components import render_metric_card, render_active_filter_bar, COLORS
 
 def render(filters: Optional[Dict[str, Any]] = None):
@@ -20,8 +25,8 @@ def render(filters: Optional[Dict[str, Any]] = None):
 
     render_active_filter_bar(filters)
 
-    queries = AnalyticsQueries()
-    kpis = queries.get_executive_kpis(departments=depts, sources=sources)
+    queries = get_shared_analytics_queries()
+    kpis = get_cached_executive_kpis(departments=depts, sources=sources)
 
     if not kpis:
         st.warning("No warehouse data found matching the selected criteria. Adjust your filters or run the data pipeline.")
@@ -46,7 +51,7 @@ def render(filters: Optional[Dict[str, Any]] = None):
 
     # Trend Visualizations
     col_left, col_right = st.columns([7, 5])
-    monthly_df = queries.get_monthly_hiring_trends(departments=depts, sources=sources)
+    monthly_df = get_cached_monthly_hiring_trends(departments=depts, sources=sources)
 
     with col_left:
         st.subheader("Monthly Application & Hiring Velocity")
@@ -101,7 +106,7 @@ def render(filters: Optional[Dict[str, Any]] = None):
 
     # Department Scorecard
     st.subheader("Department Workforce Health Scorecard")
-    dept_df = queries.get_department_metrics(departments=depts)
+    dept_df = get_cached_department_metrics(departments=depts)
     if not dept_df.empty:
         c_chart1, c_chart2 = st.columns(2)
         with c_chart1:

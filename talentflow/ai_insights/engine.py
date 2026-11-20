@@ -1,6 +1,6 @@
 """AI Insights Engine with controlled queries and safe LLM / rule-based fallback."""
 
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 import pandas as pd
 
 from talentflow.config import config, logger
@@ -11,8 +11,8 @@ from talentflow.ai_insights.fallback import DeterministicInsightsFallback
 class AIInsightsEngine:
     """Natural Language Analytics interface for HR leaders and Talent Partners."""
 
-    def __init__(self):
-        self.queries = AnalyticsQueries()
+    def __init__(self, queries: Optional[AnalyticsQueries] = None):
+        self.queries = queries or AnalyticsQueries()
         self.has_gemini = bool(config.gemini_api_key and config.gemini_api_key.strip())
 
     def analyze_question(self, question_key: str) -> Dict[str, Any]:

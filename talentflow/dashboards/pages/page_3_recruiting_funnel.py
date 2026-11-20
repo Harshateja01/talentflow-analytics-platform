@@ -6,7 +6,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
-from talentflow.analytics.queries import AnalyticsQueries
+from talentflow.dashboards.cache import (
+    get_shared_analytics_queries,
+    get_cached_recruiting_funnel_summary,
+    get_cached_stage_duration_breakdown,
+)
 from talentflow.analytics.kpis import KPIService
 from talentflow.dashboards.components import create_plotly_funnel, render_metric_card, render_active_filter_bar, COLORS
 
@@ -21,9 +25,9 @@ def render(filters: Optional[Dict[str, Any]] = None):
 
     render_active_filter_bar(filters)
 
-    queries = AnalyticsQueries()
-    funnel_summary_df = queries.get_recruiting_funnel_summary(departments=depts, sources=sources)
-    stage_duration_df = queries.get_stage_duration_breakdown(departments=depts, sources=sources)
+    queries = get_shared_analytics_queries()
+    funnel_summary_df = get_cached_recruiting_funnel_summary(departments=depts, sources=sources)
+    stage_duration_df = get_cached_stage_duration_breakdown(departments=depts, sources=sources)
 
     if funnel_summary_df.empty or funnel_summary_df.iloc[0].get("applied", 0) == 0:
         st.warning("No recruiting funnel records available for the current filter scope.")

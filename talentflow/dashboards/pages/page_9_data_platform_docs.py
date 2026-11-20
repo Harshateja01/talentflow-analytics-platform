@@ -2,8 +2,10 @@
 
 from typing import Dict, Any, Optional
 import streamlit as st
+from talentflow.dashboards.cache import get_shared_analytics_queries
 
 def render(filters: Optional[Dict[str, Any]] = None):
+    queries = get_shared_analytics_queries()
     st.markdown('<span class="badge-header">Analytics Engineering & Architecture</span>', unsafe_allow_html=True)
     st.title("Data Platform & Model Documentation")
     st.markdown("Interactive platform architecture guide, Kimball dimensional models, data dictionary, and pipeline execution standards.")

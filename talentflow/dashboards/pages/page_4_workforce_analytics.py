@@ -6,7 +6,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
-from talentflow.analytics.queries import AnalyticsQueries
+from talentflow.dashboards.cache import (
+    get_shared_analytics_queries,
+    get_cached_department_metrics,
+    get_cached_workforce_demographics,
+)
 from talentflow.dashboards.components import render_metric_card, render_active_filter_bar, COLORS
 
 def render(filters: Optional[Dict[str, Any]] = None):
@@ -20,9 +24,9 @@ def render(filters: Optional[Dict[str, Any]] = None):
 
     render_active_filter_bar(filters)
 
-    queries = AnalyticsQueries()
-    dept_df = queries.get_department_metrics(departments=depts)
-    demo_df = queries.get_workforce_demographics(departments=depts, job_levels=job_levels)
+    queries = get_shared_analytics_queries()
+    dept_df = get_cached_department_metrics(departments=depts)
+    demo_df = get_cached_workforce_demographics(departments=depts, job_levels=job_levels)
 
     if dept_df.empty:
         st.warning("No workforce metrics found matching the selected criteria.")

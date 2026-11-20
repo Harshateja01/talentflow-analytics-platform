@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "talentflow"
+version = "1.0.0"
+description = "Cloud-Native Recruiting & Workforce Intelligence Platform"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "Harsha Teja" }
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["talentflow*"]
+exclude = ["tests*", "dbt_project*", "docs*"]
+namespaces = true
