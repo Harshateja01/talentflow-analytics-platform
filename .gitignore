@@ -34,9 +34,14 @@ data/
 dbt_project/target/
 dbt_project/dbt_packages/
 dbt_project/logs/
+dbt_project/.user.yml
+*.user.yml
+logs/
 
 # Credentials & Environment
 .env
+.env.*
+!.env.example
 *.json
 !dbt_project/*.json
 !package.json

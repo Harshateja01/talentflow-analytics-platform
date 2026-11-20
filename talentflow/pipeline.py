@@ -47,6 +47,14 @@ class TalentFlowPipeline:
             env["GCP_PROJECT_ID"] = config.gcp_project_id
         if config.gcp_region:
             env["GCP_REGION"] = config.gcp_region
+        if config.google_application_credentials:
+            env["GOOGLE_APPLICATION_CREDENTIALS"] = str(config.google_application_credentials)
+        if config.bq_staging_dataset:
+            env["BQ_STAGING_DATASET"] = config.bq_staging_dataset
+        if config.bq_raw_dataset:
+            env["BQ_RAW_DATASET"] = config.bq_raw_dataset
+        if config.bq_analytics_dataset:
+            env["BQ_ANALYTICS_DATASET"] = config.bq_analytics_dataset
 
         logger.info(f"Running dbt command in {self.dbt_dir}: {' '.join(cmd)}")
         result = subprocess.run(cmd, cwd=str(self.dbt_dir), env=env, capture_output=True, text=True)
@@ -57,6 +65,21 @@ class TalentFlowPipeline:
         else:
             logger.info(f"dbt output:\n{result.stdout}")
             return True
+
+    def _log_summary(self, loaded_counts: Dict[str, int]) -> None:
+        """Logs standardized pipeline execution summary."""
+        duration = self.metrics.get("duration_seconds", 0)
+        status = self.metrics.get("status", "FAILED")
+        quality_pass_rate = self.metrics.get("quality_summary", {}).get("pass_rate_pct", "N/A")
+        raw_rows = sum(loaded_counts.values()) if loaded_counts else 0
+        raw_tables = len(loaded_counts) if loaded_counts else 0
+
+        logger.info("\n" + "=" * 80)
+        logger.info(f"TALENTFLOW PIPELINE EXECUTION FINISHED: {status}")
+        logger.info(f"Total Duration: {duration} seconds")
+        logger.info(f"Data Quality Pass Rate: {quality_pass_rate}%")
+        logger.info(f"Raw Tables Ingested: {raw_rows:,} rows across {raw_tables} tables")
+        logger.info("=" * 80)
 
     def execute(
         self,
@@ -91,12 +114,16 @@ class TalentFlowPipeline:
         report_path = QualityReporter.save_report(quality_results, config.reports_dir)
         self.metrics["quality_summary"] = QualityReporter.generate_summary(quality_results)
 
-        # Step 3: Upload to GCS (GCP mode only)
+        # Step 3: Upload to GCS (GCP mode with configured bucket only)
         if self.mode == "gcp":
-            logger.info("\n--- Step 3: Uploading Datasets to Google Cloud Storage Landing Zone ---")
-            uploader = GCSUploader()
-            gcs_uris = uploader.upload_files(file_paths)
-            self.metrics["gcs_uris"] = gcs_uris
+            if config.gcs_bucket_name:
+                logger.info(f"\n--- Step 3: Uploading Datasets to Google Cloud Storage Landing Zone (gs://{config.gcs_bucket_name}) ---")
+                uploader = GCSUploader()
+                gcs_uris = uploader.upload_files(file_paths)
+                self.metrics["gcs_uris"] = gcs_uris
+            else:
+                logger.info("\n--- Step 3: Skipping GCS Upload (GCS_BUCKET_NAME not configured — proceeding direct to BigQuery) ---")
+                self.metrics["gcs_uris"] = "Skipped (Direct BigQuery mode — GCS_BUCKET_NAME not set)"
         else:
             logger.info("\n--- Step 3: Skipping GCS Upload (Local Development Mode active) ---")
             self.metrics["gcs_uris"] = "Local mode - GCS upload skipped"
@@ -104,16 +131,26 @@ class TalentFlowPipeline:
         # Step 4: Ingest raw datasets into warehouse raw schema
         logger.info(f"\n--- Step 4: Loading Raw Datasets into Warehouse ({'BigQuery' if self.mode == 'gcp' else 'DuckDB'}) ---")
         loader = BigQueryLoader()
-        loaded_counts = loader.load_raw_csv_files(file_paths)
-        loader.engine.close()
-        self.metrics["loaded_raw_tables"] = loaded_counts
+        loaded_counts: Dict[str, int] = {}
+        try:
+            loaded_counts = loader.load_raw_csv_files(file_paths)
+            self.metrics["loaded_raw_tables"] = loaded_counts
+        finally:
+            if hasattr(loader, "engine") and loader.engine:
+                loader.engine.close()
 
         # Step 5, 6, 7: Run dbt transformations (staging, intermediate, marts)
         logger.info("\n--- Step 5-7: Executing dbt Staging, Intermediate, and Mart Transformations ---")
         dbt_run_success = self.run_dbt_command(["run"])
         self.metrics["dbt_run_success"] = dbt_run_success
         if not dbt_run_success:
-            logger.error("dbt transformation failed. Review logs above.")
+            logger.error("\ndbt transformation failed! Skipping dbt test suite to prevent misleading test results.")
+            self.metrics["dbt_test_success"] = False
+            self.metrics["status"] = "FAILED"
+            duration = round(time.time() - self.start_time, 2)
+            self.metrics["duration_seconds"] = duration
+            self._log_summary(loaded_counts)
+            return self.metrics
 
         # Step 8: Execute dbt data quality & singular tests
         logger.info("\n--- Step 8: Executing dbt Schema and Custom Date Sequence Tests ---")
@@ -124,13 +161,7 @@ class TalentFlowPipeline:
         duration = round(time.time() - self.start_time, 2)
         self.metrics["duration_seconds"] = duration
         self.metrics["status"] = "SUCCESS" if (dbt_run_success and dbt_test_success) else "FAILED"
-
-        logger.info("\n" + "=" * 80)
-        logger.info(f"TALENTFLOW PIPELINE EXECUTION FINISHED: {self.metrics['status']}")
-        logger.info(f"Total Duration: {duration} seconds")
-        logger.info(f"Data Quality Pass Rate: {self.metrics['quality_summary']['pass_rate_pct']}%")
-        logger.info(f"Raw Tables Ingested: {sum(loaded_counts.values()):,} rows across {len(loaded_counts)} tables")
-        logger.info("=" * 80)
+        self._log_summary(loaded_counts)
 
         return self.metrics
 

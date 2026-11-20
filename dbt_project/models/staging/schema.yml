@@ -27,21 +27,24 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_candidates')
-              field: candidate_id
+              arguments:
+                to: ref('stg_candidates')
+                field: candidate_id
       - name: department_id
         description: "Standardized department identifier."
         tests:
           - not_null
           - relationships:
-              to: ref('stg_departments')
-              field: department_id
+              arguments:
+                to: ref('stg_departments')
+                field: department_id
       - name: candidate_stage
         description: "Current progression stage in recruiting funnel."
         tests:
           - not_null
           - accepted_values:
-              values: ['Applied', 'Screen', 'Technical Interview', 'Manager & Onsite', 'Offer', 'Hired']
+              arguments:
+                values: ['Applied', 'Screen', 'Technical Interview', 'Manager & Onsite', 'Offer', 'Hired']
 
   - name: stg_interviews
     description: "Standardized interview evaluations, rounds, and candidate feedback scores."
@@ -56,13 +59,15 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_applications')
-              field: application_id
+              arguments:
+                to: ref('stg_applications')
+                field: application_id
       - name: interview_result
         description: "Outcome result of the interview round."
         tests:
           - accepted_values:
-              values: ['Pass', 'Fail']
+              arguments:
+                values: ['Pass', 'Fail']
 
   - name: stg_offers
     description: "Standardized offer packages, acceptance statuses, and compensation."
@@ -77,13 +82,15 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_applications')
-              field: application_id
+              arguments:
+                to: ref('stg_applications')
+                field: application_id
       - name: offer_status
         description: "Current disposition of job offer."
         tests:
           - accepted_values:
-              values: ['Accepted', 'Declined', 'Pending', 'Rescinded']
+              arguments:
+                values: ['Accepted', 'Declined', 'Pending', 'Rescinded']
 
   - name: stg_employees
     description: "Cleaned workforce headcount, tenure, and employment status."
@@ -98,13 +105,15 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_candidates')
-              field: candidate_id
+              arguments:
+                to: ref('stg_candidates')
+                field: candidate_id
       - name: employment_status
         description: "Workforce lifecycle status."
         tests:
           - accepted_values:
-              values: ['Active', 'Terminated', 'Resigned', 'On Leave']
+              arguments:
+                values: ['Active', 'Terminated', 'Resigned', 'On Leave']
 
   - name: stg_engagement_surveys
     description: "Employee engagement and sentiment survey feedback."
@@ -119,8 +128,9 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_employees')
-              field: employee_id
+              arguments:
+                to: ref('stg_employees')
+                field: employee_id
 
   - name: stg_departments
     description: "Corporate department dimension."

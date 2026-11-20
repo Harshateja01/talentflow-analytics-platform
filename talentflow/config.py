@@ -55,15 +55,10 @@ class TalentFlowConfig:
         self.reports_dir.mkdir(parents=True, exist_ok=True)
         
         if self.is_gcp_mode():
-            missing = []
             if not self.gcp_project_id:
-                missing.append("GCP_PROJECT_ID")
-            if not self.gcs_bucket_name:
-                missing.append("GCS_BUCKET_NAME")
-            if missing:
                 raise ValueError(
-                    f"GCP mode requires environment variables: {', '.join(missing)}. "
-                    "Set them in your .env file or switch TALENTFLOW_MODE to 'local'."
+                    "GCP mode requires environment variable: GCP_PROJECT_ID. "
+                    "Set it in your .env file or switch TALENTFLOW_MODE to 'local'."
                 )
 
 def setup_logging(level: str = "INFO") -> logging.Logger:

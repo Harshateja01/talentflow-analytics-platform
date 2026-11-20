@@ -23,7 +23,7 @@ with ranked_applications as (
         cast(application_date as date) as application_date,
         trim(candidate_stage) as candidate_stage,
         trim(current_status) as current_status,
-        cast(rejection_reason as varchar) as rejection_reason,
+        cast(rejection_reason as {{ dbt.type_string() }}) as rejection_reason,
         cast(created_at as timestamp) as created_at,
         cast(updated_at as timestamp) as updated_at,
         row_number() over (

@@ -10,7 +10,7 @@ with ranked_offers as (
         cast(bonus_pct as numeric) as bonus_pct,
         cast(stock_units as integer) as stock_units,
         cast(offer_response_date as date) as offer_response_date,
-        coalesce(trim(cast(decline_reason as varchar)), 'Not Applicable') as decline_reason,
+        coalesce(trim(cast(decline_reason as {{ dbt.type_string() }})), 'Not Applicable') as decline_reason,
         row_number() over (
             partition by offer_id 
             order by offer_date desc

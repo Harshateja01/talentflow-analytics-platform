@@ -12,7 +12,7 @@ with ranked_employees as (
         cast(hire_date as date) as hire_date,
         trim(employment_status) as employment_status,
         cast(termination_date as date) as termination_date,
-        cast(manager_id as varchar) as manager_id,
+        cast(manager_id as {{ dbt.type_string() }}) as manager_id,
         cast(performance_rating as integer) as performance_rating,
         row_number() over (
             partition by employee_id 

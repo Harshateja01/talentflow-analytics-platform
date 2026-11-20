@@ -50,69 +50,84 @@ Local mode runs out-of-the-box without GCP credentials or internet access.
 
 ---
 
-## 2. Google Cloud Platform Deployment (BigQuery & GCS)
+## 2. Google Cloud Platform Deployment (BigQuery & Optional GCS)
 
-### Prerequisites
-- Active Google Cloud Platform account with billing enabled.
-- `gcloud` CLI installed and authenticated.
+TalentFlow supports **direct BigQuery ingestion using Application Default Credentials (ADC)** without requiring a Google Cloud Storage bucket or service account JSON key file.
 
-### Step-by-Step GCP Infrastructure Provisioning
+### Option A: BigQuery-Only Setup using ADC (Recommended Developer Setup)
 
-1. **Set Active Project**:
+No service account keys or GCS buckets required. TalentFlow streams Pandas DataFrames directly into BigQuery tables via `client.load_table_from_dataframe()` using idempotent `WRITE_TRUNCATE` operations, and dbt authenticates seamlessly via OAuth (`method: oauth`).
+
+1. **Authenticate via Google Cloud ADC**:
    ```bash
-   gcloud config set project YOUR_PROJECT_ID
+   gcloud auth application-default login
+   ```
+   *This grants your local developer environment authenticated access to your GCP project.*
+
+2. **Set Active Project**:
+   ```bash
+   gcloud config set project talentflow-analytics
    ```
 
-2. **Enable Required APIs**:
+3. **Enable BigQuery API**:
    ```bash
-   gcloud services enable storage.googleapis.com bigquery.googleapis.com datacatalog.googleapis.com
+   gcloud services enable bigquery.googleapis.com
    ```
 
-3. **Create Google Cloud Storage Bucket**:
-   ```bash
-   gcloud storage buckets create gs://talentflow-data-lake-YOUR_PROJECT_ID --location=us-central1
-   ```
-
-4. **Create Service Account & Grant Permissions**:
-   ```bash
-   gcloud iam service-accounts create sa-talentflow-pipeline \
-       --display-name="TalentFlow Pipeline Runner"
-
-   # Grant Storage Admin & BigQuery Roles
-   gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-       --member="serviceAccount:sa-talentflow-pipeline@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-       --role="roles/storage.objectAdmin"
-
-   gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-       --member="serviceAccount:sa-talentflow-pipeline@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-       --role="roles/bigquery.dataEditor"
-
-   gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-       --member="serviceAccount:sa-talentflow-pipeline@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-       --role="roles/bigquery.jobUser"
-
-   # Generate Service Account Key
-   gcloud iam service-accounts keys create ./gcp-key.json \
-       --iam-account="sa-talentflow-pipeline@YOUR_PROJECT_ID.iam.gserviceaccount.com"
-   ```
-
-5. **Update `.env` Configuration**:
+4. **Configure `.env`**:
    ```ini
    TALENTFLOW_MODE=gcp
-   GCP_PROJECT_ID=YOUR_PROJECT_ID
+   GCP_PROJECT_ID=talentflow-analytics
    GCP_REGION=us-central1
-   GCS_BUCKET_NAME=talentflow-data-lake-YOUR_PROJECT_ID
-   GOOGLE_APPLICATION_CREDENTIALS=./gcp-key.json
+   # GCS_BUCKET_NAME is omitted — pipeline runs in BigQuery-Only mode!
+   # GOOGLE_APPLICATION_CREDENTIALS is omitted — dbt uses ADC OAuth!
    BQ_RAW_DATASET=talentflow_raw
    BQ_STAGING_DATASET=talentflow_staging
    BQ_ANALYTICS_DATASET=talentflow_analytics
-   GEMINI_API_KEY=YOUR_GEMINI_KEY
    ```
 
-6. **Execute GCP Pipeline**:
+5. **Execute BigQuery Cloud Pipeline**:
    ```bash
    python -m talentflow.pipeline --mode gcp
    ```
+
+---
+
+### Option B: Full Cloud Setup (BigQuery + GCS Landing Zone)
+
+Use this mode if your organization mandates a Cloud Storage landing zone / data lake archive prior to warehouse ingestion:
+
+1. **Create GCS Bucket**:
+   ```bash
+   gcloud storage buckets create gs://talentflow-data-lake-talentflow-analytics --location=us-central1
+   ```
+
+2. **Add `GCS_BUCKET_NAME` to `.env`**:
+   ```ini
+   GCS_BUCKET_NAME=talentflow-data-lake-talentflow-analytics
+   ```
+   *(Optional) If using a dedicated Service Account instead of ADC:*
+   ```ini
+   GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+   ```
+
+3. **Execute Pipeline**:
+   ```bash
+   python -m talentflow.pipeline --mode gcp
+   ```
+   *The pipeline will upload all 8 CSV extracts to `gs://${GCS_BUCKET_NAME}/raw/` before loading into BigQuery.*
+
+---
+
+### BigQuery Sandbox, Quotas & Cost Considerations
+
+- **BigQuery Sandbox (No Credit Card Required)**:
+  - You can test TalentFlow in BigQuery without enabling billing.
+  - Limits: 10 GB active storage, 1 TB query analysis per month.
+  - Tables automatically expire after 60 days unless billing is enabled.
+- **BigQuery Free Tier (With Billing Enabled)**:
+  - First 10 GB of storage and 1 TB of queries per month are 100% free.
+  - The TalentFlow dataset contains ~20,640 records (~3 MB total storage), consuming less than 0.03% of the free tier allowance. Cost: **$0.00**.
 
 ---
 

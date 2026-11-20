@@ -9,8 +9,8 @@ talentflow:
 
     bigquery:
       type: bigquery
-      method: service-account
-      project: "{{ env_var('GCP_PROJECT_ID', 'talentflow-prod') }}"
+      method: "{{ env_var('DBT_BQ_METHOD', 'service-account' if env_var('GOOGLE_APPLICATION_CREDENTIALS', '') != '' else 'oauth') }}"
+      project: "{{ env_var('GCP_PROJECT_ID', 'talentflow-analytics') }}"
       dataset: "{{ env_var('BQ_STAGING_DATASET', 'talentflow_staging') }}"
       threads: 4
       timeout_seconds: 300

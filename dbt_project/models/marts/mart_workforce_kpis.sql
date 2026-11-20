@@ -20,9 +20,9 @@ exits as (
 ),
 
 months_and_depts as (
-    select distinct reporting_month, department_id from hires
-    union
-    select distinct reporting_month, department_id from exits
+    select reporting_month, department_id from hires
+    union distinct
+    select reporting_month, department_id from exits
 ),
 
 dept as (
